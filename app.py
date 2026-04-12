@@ -15,9 +15,6 @@ from functools import wraps
 # --- AI AGENT IMPORT ---
 from agent import run_netalytics_agent
 
-from bokeh.embed import file_html
-from bokeh.resources import CDN
-
 # --- PLOTLY & BOKEH IMPORTS ---
 from sklearn.linear_model import LinearRegression
 from scipy.stats import t as t_dist
@@ -1492,93 +1489,6 @@ def plot_route():
         print(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-@app.route('/plot_page')
-def plot_page_route():
-    site_id = request.args.get('site_id')
-    forecast_horizon = request.args.get('forecast_horizon', default=52, type=int)
-    if not site_id: return "Missing site_id", 400
-
-    try:
-        METRICS = [
-            {'col': 'eric_data_volume_ul_dl', 'title': 'Data Volume (GB)',  'color': '#1f77b4', 'limit': None},
-            {'col': 'eric_prb_util_rate',     'title': 'PRB Util (%)',      'color': '#ff7f0e', 'limit': 100},
-            {'col': 'eric_dl_user_ip_thpt',   'title': 'Throughput (Mbps)', 'color': '#2ca02c', 'limit': None}
-        ]
-
-        sql = f"""
-            SELECT zoom_sector_id, week, year, eric_data_volume_ul_dl, eric_prb_util_rate, eric_dl_user_ip_thpt
-            FROM sector_calculations WHERE zoom_sector_id LIKE '{site_id.strip()}%' ORDER BY year, week
-        """
-        df_actual = get_cached_dataframe(sql)
-
-        if df_actual.empty: return "No data found for this site", 404
-
-        def get_date(r):
-            try: return date.fromisocalendar(int(r['year']), int(r['week']), 1)
-            except: return None
-
-        df_actual['plot_date'] = pd.to_datetime(df_actual.apply(get_date, axis=1))
-        df_actual = df_actual.dropna(subset=['plot_date'])
-        start_date = df_actual['plot_date'].min()
-
-        all_plots = []
-        sectors = df_actual['zoom_sector_id'].unique()
-
-        for i, sector in enumerate(sectors):
-            df_sec = df_actual[df_actual['zoom_sector_id'] == sector].sort_values('plot_date')
-            df_sec['days'] = (df_sec['plot_date'] - start_date).dt.days
-            x_raw = df_sec['days'].values.reshape(-1, 1)
-            last_day = x_raw.max() if len(x_raw) > 0 else 0
-            future_days_col = np.arange(last_day + 7, last_day + (7 * forecast_horizon), 7).reshape(-1, 1)
-            future_dates = [start_date + timedelta(days=int(d)) for d in future_days_col.flatten()]
-
-            row_plots = []
-            for j, metric in enumerate(METRICS):
-                y_raw = df_sec[metric['col']].values
-                mask = ~np.isnan(y_raw)
-                p = figure(title=f"{sector} - {metric['title']}" if j==1 else (sector if j==0 else metric['title']), x_axis_type="datetime", sizing_mode="stretch_width", height=350, tools="pan,wheel_zoom,reset,save,hover", background_fill_color="#fafafa")
-
-                if np.sum(mask) > 2:
-                    x_clean = x_raw[mask]; y_clean = y_raw[mask]; n = len(x_clean)
-                    model = LinearRegression(); model.fit(x_clean, y_clean)
-                    y_pred = model.predict(future_days_col)
-                    x_mean = np.mean(x_clean); y_hat_hist = model.predict(x_clean)
-                    residuals = y_clean - y_hat_hist; rss = np.sum(residuals**2); dof = n - 2
-                    s_err = np.sqrt(rss / dof) if dof > 0 else 0; sxx = np.sum((x_clean - x_mean)**2)
-                    t_val = t_dist.ppf(0.975, dof) if dof > 0 else 0
-
-                    ci_width = [t_val * (s_err * np.sqrt((1/n) + ((d - x_mean)**2 / sxx))) for d in future_days_col.flatten()]
-                    y_pred = np.maximum(y_pred, 0)
-                    if metric['limit']: y_pred = np.minimum(y_pred, metric['limit'])
-                    upper = y_pred + ci_width; lower = np.maximum(y_pred - ci_width, 0)
-                    if metric['limit']: upper = np.minimum(upper, metric['limit'])
-
-                    band_x = np.append(future_dates, future_dates[::-1]); band_y = np.append(lower, upper[::-1])
-                    p.patch(band_x, band_y, color=metric['color'], alpha=0.15, line_width=0)
-                    p.line(future_dates, y_pred, color=metric['color'], line_dash="dashed", line_width=2, legend_label="ML Forecast")
-
-                source_actual = ColumnDataSource(data=dict(date=df_sec['plot_date'], val=df_sec[metric['col']], week_num=df_sec['week']))
-                p.line('date', 'val', source=source_actual, color=metric['color'], line_width=2, legend_label="Actual")
-                p.scatter('date', 'val', source=source_actual, color=metric['color'], size=6, marker="circle")
-                
-                # Setup HoverTool
-                hover = p.select(dict(type=HoverTool))
-                hover.tooltips = [("Date", "@date{%F}"), ("Val", "@val{0.2f}")]
-                hover.formatters = {'@date': 'datetime'}
-
-                p.legend.location = "top_left"; p.legend.label_text_font_size = "8pt"
-                row_plots.append(p)
-            all_plots.append(row_plots)
-
-        grid = gridplot(all_plots, toolbar_location="right", sizing_mode="stretch_width")
-        
-        # MAGIC HAPPENS HERE: Convert the grid into a standalone HTML webpage!
-        html = file_html(grid, CDN, f"Forecast for {site_id}")
-        return html
-
-    except Exception as e:
-        return f"Error generating plot: {str(e)}", 500
-
 # --- ADMIN PRICING LOGIC (KEPT INTACT) ---
 DEFAULT_PRICING = {
     "EQ": {
@@ -1730,7 +1640,13 @@ def api_site_upgrade_details():
         sectors_dict = {}
         
         # FETCH THE LIVE PRICING FROM YOUR ADMIN PANEL
-        live_pricing = get_pricing()
+        # get_pricing_for_calc() returns flat numbers (e.g. {"EQ": {"Add Layer": 5000}, ...})
+        # get_pricing() may return dicts like {"price":5000,"min":4000,"max":6000} which
+        # would cause "unsupported operand type(s) for *: 'dict' and 'float'" in recalculate_live_capex
+        live_pricing = get_pricing_for_calc()
+        
+        # Also fetch full pricing with ranges for Staff range display in CAPEX popup
+        live_pricing_full = get_pricing_flat()
 
         for _, row in df.iterrows():
             sec_id = row['zoom_sector_id']
@@ -1788,10 +1704,24 @@ def api_site_upgrade_details():
 
             capex_data = None
             if has_upgrade and capex_rm > 0:
+                # Build range info for Staff view from full pricing
+                eq_range = None
+                es_range = None
+                try:
+                    # Recalculate using min/max prices for Staff range display
+                    min_pricing = {cat: {name: vals["min"] for name, vals in items.items()} for cat, items in live_pricing_full.items()}
+                    max_pricing = {cat: {name: vals["max"] for name, vals in items.items()} for cat, items in live_pricing_full.items()}
+                    _, min_eq, min_es = recalculate_live_capex(row, min_pricing)
+                    _, max_eq, max_es = recalculate_live_capex(row, max_pricing)
+                    eq_range = {"min": min_eq, "max": max_eq}
+                    es_range = {"min": min_es, "max": max_es}
+                except Exception:
+                    pass
+
                 capex_data = {
                     "total_capex": capex_rm,
-                    "eq_breakdown": [[case_label[:45] + "...", eq_cost]],
-                    "es_chosen": {"name": "Engineering Services (Highest)", "cost": es_cost}
+                    "eq_breakdown": [[case_label[:45] + "...", eq_cost, eq_range]],
+                    "es_chosen": {"name": "Engineering Services (Highest)", "cost": es_cost, "range": es_range}
                 }
 
             sectors_dict[sec_id] = {
@@ -1856,20 +1786,91 @@ def chat_agent():
     data = request.json
     user_prompt = data.get('message', '').strip()
     week = data.get('week', 'All')
-    region = data.get('region', 'All')
-    operator = data.get('operator', 'All')
-    cluster = data.get('cluster', 'All')
 
-    # Grab the logged-in user's ID to use as the memory thread
+    # 1. ADD THIS LINE: Grab the logged-in user's ID to use as the memory thread
     thread_id = str(session.get('user_id', 'default_session'))
 
     if not user_prompt:
         return jsonify({"error": "Empty message"}), 400
 
-    print(f"[AI Agent] Sending prompt to LangGraph for Thread {thread_id}...")
+    # ---------------------------------------------------------
+    # 1. GENERATE EMBEDDING (Convert text to vector math)
+    # ---------------------------------------------------------
+    prompt_embedding = None
+    try:
+        embed_res = requests.post("http://vibe_ollama:11434/api/embeddings", json={
+            "model": "nomic-embed-text",
+            "prompt": user_prompt
+        }, timeout=5)
+        if embed_res.status_code == 200:
+            prompt_embedding = embed_res.json().get('embedding')
+    except Exception as e:
+        print(f"[AI Cache] Embedding generation failed: {e}")
 
-    # Execute the actual LangGraph Agent directly (Bypassing all app.py caching!)
-    ai_response = run_netalytics_agent(user_prompt, week, region, operator, cluster, thread_id)
+    # ---------------------------------------------------------
+    # 2. HYBRID SEMANTIC CACHE (Vector + Keyword)
+    # ---------------------------------------------------------
+    embedding_str = None
+    if prompt_embedding:
+        embedding_str = f"[{','.join(map(str, prompt_embedding))}]"
+        
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    # Automatically hunt for Site IDs (e.g., 1712H, KUL_01) in the user's message
+                    import re
+                    # This regex grabs uppercase alphanumeric words between 4 and 10 characters
+                    detected_site_ids = re.findall(r'\b[A-Z0-9_]{4,10}\b', user_prompt.upper())
+                    
+                    # Base fuzzy vector search (95% similarity)
+                    check_query = """
+                        SELECT ai_response, 1 - (prompt_embedding <=> %s::vector) AS similarity
+                        FROM ai_semantic_cache
+                        WHERE 1 - (prompt_embedding <=> %s::vector) > 0.95
+                    """
+                    params = [embedding_str, embedding_str]
+                    
+                    # STRICT LOCK: If the user mentioned a Site ID, force the cached question to have it too!
+                    for sid in detected_site_ids:
+                        check_query += " AND UPPER(user_prompt) LIKE %s"
+                        params.append(f"%{sid}%")
+                        
+                    check_query += " ORDER BY similarity DESC LIMIT 1;"
+                    
+                    cursor.execute(check_query, params)
+                    cached_result = cursor.fetchone()
+
+                    if cached_result:
+                        print(f"[AI Cache] HYBRID HIT! Similarity: {cached_result[1]:.4f}")
+                        return jsonify({"reply": cached_result[0], "cached": True})
+
+        except Exception as e:
+            print(f"[AI Cache] DB Read Error: {e}")
+
+    # ---------------------------------------------------------
+    # 3. NO CACHE HIT -> TRIGGER LLAMA 3.2 (LANGGRAPH AGENT)
+    # ---------------------------------------------------------
+    print("[AI Cache] MISS. Waking up Llama 3.2...")
+
+    # Execute the actual LangGraph Agent
+    ai_response = run_netalytics_agent(user_prompt, week, thread_id)
+
+    # ---------------------------------------------------------
+    # 4. SAVE NEW ANSWER TO CACHE FOR THE NEXT USER
+    # ---------------------------------------------------------
+    if prompt_embedding and ai_response:
+        try:
+            # FIX: Use the 'with' statement for the context manager!
+            with get_db_connection() as conn:
+                with conn.cursor() as cursor:
+                    insert_query = """
+                        INSERT INTO ai_semantic_cache (user_prompt, prompt_embedding, ai_response)
+                        VALUES (%s, %s::vector, %s)
+                    """
+                    cursor.execute(insert_query, (user_prompt, embedding_str, ai_response))
+            print("[AI Cache] New response saved to pgvector.")
+        except Exception as e:
+            print(f"[AI Cache] DB Write Error: {e}")
 
     return jsonify({"reply": ai_response, "cached": False})
 
