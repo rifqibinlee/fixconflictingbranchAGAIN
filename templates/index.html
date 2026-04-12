@@ -8,6 +8,7 @@
   <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css">
@@ -393,23 +394,24 @@
         };
     </script>
 
-    <nav class="text-white p-4 shadow-lg sticky top-0 z-50 h-[72px]" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-    <div class="container mx-auto flex justify-between items-center">
-        <div>
-            <img src="{{ url_for('static', filename='file.svg') }}" alt="Logo" class="h-8 w-auto">
+    <nav class="px-4 sticky top-0 z-50 h-[72px] border-b border-black flex items-center" style="background: #ffffff;">
+    <div class="container mx-auto flex justify-between items-center h-full">
+        <div class="flex items-center gap-2">
+            <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:1.5rem; color:#111827; letter-spacing:-0.02em;">3W</span>
+            <span style="font-family:'Montserrat',sans-serif; font-size:0.7rem; color:#6b7280; line-height:1.2;">Brought to you by<br><span style="font-weight:700; color:#111827;">Advanced Analytics</span></span>
         </div>
 
         <div class="flex gap-2 absolute left-1/2 transform -translate-x-1/2 items-center">
-          <button id="tabBtnDashboard" onclick="switchMainTab('dashboard')" class="text-white opacity-70 hover:opacity-100 font-semibold border-b-2 border-transparent hover:border-white pb-1 transition-all whitespace-nowrap text-sm px-3">
+          <button id="tabBtnDashboard" onclick="switchMainTab('dashboard')" class="text-gray-500 hover:text-gray-900 font-semibold border-b-2 border-transparent hover:border-gray-900 pb-1 transition-all whitespace-nowrap text-sm px-3">
           <span class="hidden sm:inline">RAN </span>Forecast
       </button>
       
-      <button id="tabBtnMap" onclick="switchMainTab('map')" class="text-white font-semibold border-b-2 border-white pb-1 transition-all whitespace-nowrap text-sm px-3">
+      <button id="tabBtnMap" onclick="switchMainTab('map')" class="text-gray-900 font-semibold border-b-2 border-gray-900 pb-1 transition-all whitespace-nowrap text-sm px-3">
           <span class="hidden sm:inline">Coverage </span>Map
       </button>
       
       <div class="relative" id="toolsDropdownWrapper">
-          <button id="tabBtnTools" onclick="toggleToolsDropdown()" class="text-white opacity-70 hover:opacity-100 font-semibold border-b-2 border-transparent hover:border-white pb-1 transition-all whitespace-nowrap text-sm px-3">
+          <button id="tabBtnTools" onclick="toggleToolsDropdown()" class="text-gray-500 hover:text-gray-900 font-semibold border-b-2 border-transparent hover:border-gray-900 pb-1 transition-all whitespace-nowrap text-sm px-3">
               <span class="hidden md:inline">Enterprise </span>
           </button>
               <div id="toolsDropdown" class="hidden absolute left-1/2 -translate-x-1/2 mt-3 w-64 bg-white rounded-xl shadow-2xl overflow-hidden text-gray-700 border border-gray-100 z-[9999]">
@@ -427,22 +429,22 @@
 
         <div class="flex items-center gap-3">
             {% if role == 'Admin' %}
-            <a href="/iam" class="bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-lg transition-all duration-300 shadow-lg hover:scale-110" title="User Management (IAM)">
+            <a href="/iam" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2.5 rounded-lg transition-all duration-300 shadow-sm border border-gray-200 hover:scale-105" title="User Management (IAM)">
                 <i class="fas fa-shield-alt text-lg"></i>
             </a>
             {% endif %}
 
-            <button onclick="openMessagingModal()" class="relative bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-lg transition-all duration-300 shadow-lg hover:scale-110" title="Messages">
+            <button onclick="openMessagingModal()" class="relative bg-gray-100 hover:bg-gray-200 text-gray-700 p-2.5 rounded-lg transition-all duration-300 shadow-sm border border-gray-200 hover:scale-105" title="Messages">
                 <i class="fas fa-envelope text-lg"></i>
                 <span id="navUnreadBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold">0</span>
             </button>
 
-            <button onclick="openReviewModal()" class="bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-lg transition-all duration-300 shadow-lg hover:scale-110" title="Submit a Review">
+            <button onclick="openReviewModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-2.5 rounded-lg transition-all duration-300 shadow-sm border border-gray-200 hover:scale-105" title="Submit a Review">
                 <i class="fas fa-star text-lg"></i>
             </button>
 
             <div class="relative ml-2">
-                <button id="menuBtn" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-100 transition flex items-center gap-2 shadow-lg">
+                <button id="menuBtn" class="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg font-bold hover:bg-gray-200 transition flex items-center gap-2 shadow-sm border border-gray-200">
                     <i class="fas fa-user-circle"></i> {{ username }} <i class="fas fa-chevron-down text-xs ml-1"></i>
                 </button>
                 <div id="menuDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl overflow-hidden text-gray-700 border border-gray-100 z-[9999]">
@@ -1891,8 +1893,8 @@
             const bitcoinContainer = document.getElementById('bitcoinContainer');
             const pegmanControl = document.getElementById('pegmanControl');
 
-            const inactiveClass = 'text-white opacity-70 hover:opacity-100 font-semibold border-b-2 border-transparent hover:border-white pb-1 transition-all whitespace-nowrap text-sm px-3';
-            const activeClass = 'text-white font-semibold border-b-2 border-white pb-1 transition-all whitespace-nowrap text-sm px-3';
+            const inactiveClass = 'text-gray-500 hover:text-gray-900 font-semibold border-b-2 border-transparent hover:border-gray-900 pb-1 transition-all whitespace-nowrap text-sm px-3';
+            const activeClass = 'text-gray-900 font-semibold border-b-2 border-gray-900 pb-1 transition-all whitespace-nowrap text-sm px-3';
 
             // Hide all views
             if (dashboardView) dashboardView.style.display = 'none';
@@ -1906,7 +1908,7 @@
             document.getElementById('tabBtnMap').className = inactiveClass;
             // Reset tools button
             const toolsBtn = document.getElementById('tabBtnTools');
-            toolsBtn.className = toolsBtn.className.replace('border-white', 'border-transparent').replace(/(?<!\-)opacity-100/g, 'opacity-70');
+            toolsBtn.className = toolsBtn.className.replace('border-gray-900', 'border-transparent').replace(/(?<!\-)text-gray-900/g, 'text-gray-500');
 
             // Hide pegman by default; show only on map tab
             if (pegmanControl) pegmanControl.style.visibility = 'hidden';
@@ -1933,14 +1935,14 @@
             } else if (tab === 'cctv') {
                 if (cctvContainer) cctvContainer.style.display = 'block';
                 // Highlight tools button
-                toolsBtn.classList.remove('opacity-70', 'border-transparent');
-                toolsBtn.classList.add('opacity-100', 'border-white');
+                toolsBtn.classList.remove('text-gray-500', 'border-transparent');
+                toolsBtn.classList.add('text-gray-900', 'border-gray-900');
                 setTimeout(() => { if (typeof initCctvMap === 'function') initCctvMap(); }, 200);
 
             } else if (tab === 'bitcoin') {
                 if (bitcoinContainer) bitcoinContainer.style.display = 'block';
-                toolsBtn.classList.remove('opacity-70', 'border-transparent');
-                toolsBtn.classList.add('opacity-100', 'border-white');
+                toolsBtn.classList.remove('text-gray-500', 'border-transparent');
+                toolsBtn.classList.add('text-gray-900', 'border-gray-900');
                 setTimeout(() => { if (typeof initMinerHunter === 'function') initMinerHunter(); }, 200);
             }
         }
