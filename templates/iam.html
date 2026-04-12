@@ -6,6 +6,7 @@
     <title>User Management</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -52,20 +53,22 @@
     </style>
 </head>
 
-<body class="bg-gray-50 min-h-screen pt-32">
-    <nav class="fixed top-0 left-0 w-full z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 shadow-lg">
-        <div class="container mx-auto flex justify-between items-center">
+<body class="bg-gray-50 min-h-screen pt-20">
+    <nav class="fixed top-0 left-0 w-full z-50 px-6 border-b border-black flex items-center" style="background:#ffffff; height:72px;">
+        <div class="container mx-auto flex justify-between items-center h-full">
             <div class="flex items-center gap-3">
-				    <img src="{{ url_for('static', filename='file.svg') }}" alt="Logo" class="h-8 w-auto">
-			    <h1 class="text-3xl font-bold flex items-center gap-3">
-			        <i class="fas fa-shield-alt"></i>
-			        User Management
-			    </h1>
-			</div>
+                <span style="font-family:'Montserrat',sans-serif; font-weight:900; font-size:1.5rem; color:#111827; letter-spacing:-0.02em;">3W</span>
+                <span style="font-family:'Montserrat',sans-serif; font-size:0.7rem; color:#6b7280; line-height:1.2;">Brought to you by<br><span style="font-weight:700; color:#111827;">Advanced Analytics</span></span>
+                <div class="w-px h-8 bg-gray-300 mx-2"></div>
+                <h1 class="text-xl font-bold flex items-center gap-2 text-gray-800">
+                    <i class="fas fa-shield-alt text-gray-500"></i>
+                    User Management
+                </h1>
+            </div>
             <div class="flex items-center gap-3">
                 <!-- Messages Button -->
                 <button onclick="openMessagingModal()" 
-                        class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all duration-300 shadow-lg hover:scale-110 relative"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg transition-all duration-300 shadow-sm border border-gray-200 hover:scale-105 relative"
                         title="Messages">
                     <i class="fas fa-envelope text-xl"></i>
                     <span id="navUnreadBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 font-bold">0</span>
@@ -73,14 +76,14 @@
 
                 <!-- Review Button -->
                 <button onclick="openReviewModal()"
-                        class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all duration-300 shadow-lg hover:scale-110"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg transition-all duration-300 shadow-sm border border-gray-200 hover:scale-105"
                         title="Submit a Review">
                     <i class="fas fa-star text-xl"></i>
                 </button>
                 <!-- Menu Button -->
                 <div class="relative">
                     <button id="menuBtn" 
-                            class="bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-all duration-300 shadow-lg hover:scale-110"
+                            class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-3 rounded-lg transition-all duration-300 shadow-sm border border-gray-200 hover:scale-105"
                             title="User menu">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
